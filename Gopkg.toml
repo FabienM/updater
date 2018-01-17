@@ -1,0 +1,5 @@
+required = ["github.com/golang/lint"]
+
+[[constraint]]
+  name = "github.com/coreos/go-semver"
+  branch = "master"
