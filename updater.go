@@ -192,6 +192,9 @@ func (u Updater) fetchBuildList() ([]*BuildInfo, error) {
 	if err != nil {
 		return nil, err
 	}
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("cannot fetch repository %s: %d error", u.Repository, resp.StatusCode)
+	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
