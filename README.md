@@ -45,11 +45,11 @@ func main() {
 	build, _:= u.FindLatest()
 
 	if build.NewerThan(version) {
-	    fmt.Printf("Do you want to update to %s? [Y/n]\n", build.Version)
+		fmt.Printf("Do you want to update to %s? [Y/n]\n", build.Version)
 		input:= "y"
 		fmt.Scanln(&input)
 		if strings.ToLower(input[0:0]) == "y" {
-			u.ApplyToCurrentExecutable(build)
+			u.UpdateTo(build)
 			os.Exit(0)
 		} 
 	}

@@ -40,6 +40,8 @@ type Matcher func(info *BuildInfo) bool
 type Config struct {
 	// BinaryName is the base name of binary artifacts
 	BinaryName string
+	// TargetPath is the local path to update (default to os.Executable())
+	TargetPath string
 	// Fields is an ordered array describing filename structure, using field* constants
 	Fields []field
 	// FieldSeparator is the string separating fields in the filename
@@ -91,7 +93,7 @@ func New(config Config) Updater {
 		config.SortCriteria = SortSemver
 	}
 	if config.Matcher == nil {
-		defaultMatcher := NameCurrentOsArchMatcher(config.BinaryName)
+		defaultMatcher := nameCurrentOsArchMatcher(config.BinaryName)
 		config.Matcher = &defaultMatcher
 	}
 	if len(config.Fields) == 0 {
@@ -125,21 +127,20 @@ func (u Updater) FindLatest() (*BuildInfo, error) {
 	return buildList[len(buildList)-1], nil
 }
 
-// ApplyToCurrentExecutable runs ApplyToPath with the path returned by os.Executable
-func (u Updater) ApplyToCurrentExecutable(build *BuildInfo) error {
-	path, err := os.Executable()
-	if err != nil {
-		return err
+// UpdateTo download the referenced build and move it to the target path
+func (u Updater) UpdateTo(build *BuildInfo) error {
+	path := u.TargetPath
+	var err error
+	if path == "" {
+		path, err = os.Executable()
 	}
-	return u.ApplyToPath(build, path)
-}
-
-// ApplyToPath download the referenced build and move it to the given path
-func (u Updater) ApplyToPath(build *BuildInfo, path string) error {
+	if err != nil {
+		return fmt.Errorf("cannot find current executable path: %v", err)
+	}
 	tmpPath := fmt.Sprintf(u.TmpPattern, build.File)
 	tmpFile, err := os.OpenFile(tmpPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0777)
 	if err != nil {
-		return fmt.Errorf("cannot create temporary file %s: %s", tmpPath, err.Error())
+		return fmt.Errorf("cannot create temporary file %s: %v", tmpPath, err)
 	}
 	defer func() {
 		tmpFile.Close()
@@ -147,7 +148,7 @@ func (u Updater) ApplyToPath(build *BuildInfo, path string) error {
 	}()
 	resp, err := http.Get(build.URL)
 	if err != nil {
-		return fmt.Errorf("cannot download new version at %s: %s", build.URL, err.Error())
+		return fmt.Errorf("cannot download new version at %s: %v", build.URL, err)
 	}
 	defer resp.Body.Close()
 	_, err = io.Copy(tmpFile, resp.Body)
@@ -157,7 +158,7 @@ func (u Updater) ApplyToPath(build *BuildInfo, path string) error {
 
 	err = os.Rename(tmpPath, path)
 	if err != nil {
-		return fmt.Errorf("cannot move temporary file %s to %s: %s", tmpPath, path, err.Error())
+		return fmt.Errorf("cannot move temporary file %s to %s: %s", tmpPath, path, err)
 	}
 
 	return nil
@@ -171,8 +172,7 @@ func (build *BuildInfo) NewerThan(version string) bool {
 	return semver.New(version).LessThan(*build.Version)
 }
 
-// NameCurrentOsArchMatcher generates a Matcher that returns true if the build matches the binary name and the runtime OS and architecture
-func NameCurrentOsArchMatcher(name string) Matcher {
+func nameCurrentOsArchMatcher(name string) Matcher {
 	return func(build *BuildInfo) bool {
 		return build != nil && build.Name == name && build.Arch == runtime.GOARCH && build.Os == runtime.GOOS
 	}
