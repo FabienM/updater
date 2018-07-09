@@ -6,11 +6,18 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.0.1]
+
+### Fixed
+
+- Perform a hard copy if the temporary file cannot be moved
+
 ## [1.0.0]
 
 ### Added
 
 - Initial import of the lib, handling simples HTML "file-index" pages
 
-[Unreleased]: https://github.com/FabienM/updater/compare/1.0.0...master
+[Unreleased]: https://github.com/FabienM/updater/compare/1.0.1...master
+[1.0.1]: https://github.com/FabienM/updater/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/FabienM/updater/tag/1.0.0

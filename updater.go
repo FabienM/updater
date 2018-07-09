@@ -156,8 +156,7 @@ func (u Updater) UpdateTo(build *BuildInfo) error {
 		return err
 	}
 
-	err = os.Rename(tmpPath, path)
-	if err != nil {
+	if err = updateFile(tmpPath, path); err != nil {
 		return fmt.Errorf("cannot move temporary file %s to %s: %s", tmpPath, path, err)
 	}
 
@@ -254,4 +253,32 @@ func (s *buildInfoSorter) Len() int {
 
 func (s *buildInfoSorter) Swap(i, j int) {
 	s.builds[i], s.builds[j] = s.builds[j], s.builds[i]
+}
+
+func updateFile(src, dst string) error {
+	if err := os.Rename(src, dst); err == nil {
+		return nil
+	}
+
+	in, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	if _, err = io.Copy(out, in); err != nil {
+		return err
+	}
+
+	if err := out.Chmod(0755); err != nil {
+		return err
+	}
+
+	return out.Close()
 }
